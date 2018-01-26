@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView
-    android:id="@+id/tv_water"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="50dp"
-    android:layout_height="50dp"
-    android:textColor="@android:color/white"
-    android:background="@drawable/tv_water_bg"
-    android:gravity="center"
-    android:elevation="4dp"
-    android:hint="4"
-    android:textSize="38px">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
 
-</TextView>
+    <TextView
+        android:id="@+id/tv_water_number"
+        android:layout_width="50dp"
+        android:background="@drawable/tv_water_bg"
+        android:layout_height="50dp"
+        android:gravity="center_horizontal|bottom"
+        android:hint="4"
+        android:textColor="@android:color/white"
+        android:textSize="38px" />
+
+    <TextView
+        android:id="@+id/tv_water_name"
+        android:layout_width="50dp"
+        android:layout_height="25dp"
+        android:gravity="center_horizontal|top"
+        android:hint="4"
+        android:textColor="@android:color/white"
+        android:textSize="38px" />
+</FrameLayout>

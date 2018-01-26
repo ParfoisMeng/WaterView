@@ -11,35 +11,37 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.ltb.laer.waterview.R;
-import com.ltb.laer.waterview.model.Water;
+import com.ltb.laer.waterview.adapter.BaseWaterAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+//import com.ltb.laer.waterview.R;
+//import com.ltb.laer.waterview.model.Water;
+
 /**
  * 创建时间: 2018/1/9
  * 创建人:  laitianbing
  * 描述:  蚂蚁森林模拟
  * 处理思路：
- *     ->将森林水滴作为一个总体而不是单个的view，自定义一个ViewGroup容器
- *     ->循环创建view
- *     ->为view随机设置位置(在一些固定的集合中随机选取，尽量保证水滴不重合)
- *     ->为view设置一个初始的运动方向（注：由于每个view的运动方向不同，所以我选择将方向绑定到view的tag中）
- *     ->为view设置一个初始的速度（同理：将初始速度绑定到view的tag中）
- *     ->添加view到容器中，并缩放伴随透明度显示
- *     ->开启handler达到view上下位移动画（注意点：这里我们需要定一个临界值来改变view的速度，到达view时而快时而慢的目的）
- *     ->点击view后，缩放、透明度伴随位移移除水滴
- *     ->界面销毁时停止调用handler避免内存泄漏，空指针等异常
+ * ->将森林水滴作为一个总体而不是单个的view，自定义一个ViewGroup容器
+ * ->循环创建view
+ * ->为view随机设置位置(在一些固定的集合中随机选取，尽量保证水滴不重合)
+ * ->为view设置一个初始的运动方向（注：由于每个view的运动方向不同，所以我选择将方向绑定到view的tag中）
+ * ->为view设置一个初始的速度（同理：将初始速度绑定到view的tag中）
+ * ->添加view到容器中，并缩放伴随透明度显示
+ * ->开启handler达到view上下位移动画（注意点：这里我们需要定一个临界值来改变view的速度，到达view时而快时而慢的目的）
+ * ->点击view后，缩放、透明度伴随位移移除水滴
+ * ->界面销毁时停止调用handler避免内存泄漏，空指针等异常
+ * <p>
+ * ParfoisMeng修改使用
  */
 public class WaterView extends FrameLayout {
     private static final int WHAT_ADD_PROGRESS = 1;
@@ -94,16 +96,22 @@ public class WaterView extends FrameLayout {
 
     private Random mRandom = new Random();
     private List<View> mViews = new ArrayList<>();
-    private int mChildViewRes = R.layout.water_item;//子view的资源文件
 
-    private LayoutInflater mInflater;
-    private int mTotalConsumeWater;//总的已经点击的水滴
     private boolean isOpenAnimtion;//是否开启动画
     private boolean isCancelAnimtion;//是否销毁动画
     private int maxX, maxY;//子view的x坐标和y坐标的最大取值
     private float mMaxSpace;//父控件对角线的距离
     private Point mDestroyPoint;//view销毁时的点
 
+    public interface OnItemClickListener {
+        void onItemClick(int index);
+    }
+
+    private OnItemClickListener itemClickListener;
+
+    public void setOnItemClickListener(OnItemClickListener itemClickListener) {
+        this.itemClickListener = itemClickListener;
+    }
 
     public WaterView(@NonNull Context context) {
         this(context, null);
@@ -115,10 +123,10 @@ public class WaterView extends FrameLayout {
 
     public WaterView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        mInflater = LayoutInflater.from(getContext());
     }
 
-    @SuppressLint("HandlerLeak") private Handler mHandler = new Handler() {
+    @SuppressLint("HandlerLeak")
+    private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             //根据isCancelAnimtion来标识是否退出，防止界面销毁时，再一次改变UI
@@ -166,18 +174,19 @@ public class WaterView extends FrameLayout {
     }
 
     /**
-     * 设置水滴
-     * @param waters
+     * 设置水滴适配器
+     *
+     * @param adapter
      */
-    public void setWaters(final List<Water> waters) {
-        if (waters == null || waters.isEmpty()) {
+    public void setWaterAdapter(final BaseWaterAdapter adapter) {
+        if (null == adapter || adapter.isEmpty()) {
             return;
         }
         //确保初始化完成
         post(new Runnable() {
             @Override
             public void run() {
-                setDatas(waters);
+                setDatas(adapter);
             }
         });
     }
@@ -185,13 +194,13 @@ public class WaterView extends FrameLayout {
     /**
      * 设置数据
      *
-     * @param waters
+     * @param adapter
      */
-    private void setDatas(List<Water> waters) {
+    private void setDatas(BaseWaterAdapter adapter) {
         reset();
         isCancelAnimtion = false;
         setCurrentCanChoseRandoms();
-        addWaterView(waters);
+        addWaterView(adapter);
         setViewsSpd();
         startAnimation();
     }
@@ -204,17 +213,17 @@ public class WaterView extends FrameLayout {
     /**
      * 添加水滴view
      */
-    private void addWaterView(List<Water> waters) {
-        for (int i = 0; i < waters.size(); i++) {
-            final Water water = waters.get(i);
-            View view = mInflater.inflate(mChildViewRes, this, false);
-            TextView tvWater = view.findViewById(R.id.tv_water);
-            view.setTag(water);
-            tvWater.setText(String.valueOf(water.getNumber()) + "g");
+    private void addWaterView(BaseWaterAdapter adapter) {
+        for (int i = 0; i < adapter.getCount(); i++) {
+            View view = adapter.getView(i);
+            view.setTag(adapter.getItem(i));
             view.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    handViewClick(view);
+//                    handViewClick(mViews.indexOf(view));
+                    if (null != itemClickListener) {
+                        itemClickListener.onItemClick(mViews.indexOf(view));
+                    }
                 }
             });
             //随机设置view动画的方向
@@ -239,22 +248,17 @@ public class WaterView extends FrameLayout {
     }
 
     /**
-     * 处理view点击
+     * 处理view点击，移除view
      *
-     * @param view
+     * @param index
      */
-    private void handViewClick(View view) {
+    private void handViewClick(int index) {
         //移除当前集合中的该view
-        mViews.remove(view);
-        Object tag = view.getTag();
-        if (tag instanceof Water) {
-            Water waterTag = (Water) tag;
-            mTotalConsumeWater += waterTag.getNumber();
-            Toast.makeText(getContext(), "当前点击的是：" + waterTag.getName() + "水滴的值是:"
-                    + waterTag.getNumber() + "总的水滴数是" + mTotalConsumeWater, Toast.LENGTH_SHORT).show();
+        if (index >= 0 && index < mViews.size()) {
+            View view = mViews.remove(index);
+            view.setTag(R.string.original_y, view.getY());
+            animRemoveView(view);
         }
-        view.setTag(R.string.original_y, view.getY());
-        animRemoveView(view);
     }
 
     /**
@@ -355,6 +359,7 @@ public class WaterView extends FrameLayout {
 
     /**
      * 动画移除view
+     *
      * @param view
      */
     private void animRemoveView(final View view) {
@@ -391,6 +396,7 @@ public class WaterView extends FrameLayout {
 
     /**
      * 设置view的属性
+     *
      * @param view
      * @param alpha
      * @param translationY
