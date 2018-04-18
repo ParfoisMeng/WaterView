@@ -213,16 +213,16 @@ public class WaterView extends FrameLayout {
     /**
      * 添加水滴view
      */
-    private void addWaterView(BaseWaterAdapter adapter) {
+    private void addWaterView(final BaseWaterAdapter adapter) {
         for (int i = 0; i < adapter.getCount(); i++) {
             View view = adapter.getView(i);
             view.setTag(adapter.getItem(i));
             view.setOnClickListener(new OnClickListener() {
                 @Override
-                public void onClick(View view) {
+                public void onClick(View v) {
 //                    handViewClick(mViews.indexOf(view));
                     if (null != itemClickListener) {
-                        itemClickListener.onItemClick(mViews.indexOf(view));
+                        itemClickListener.onItemClick(adapter.getIndex(v.getTag()));
                     }
                 }
             });

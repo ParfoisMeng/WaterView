@@ -39,5 +39,9 @@ public abstract class BaseWaterAdapter {
         return mList.get(position);
     }
 
+    public int getIndex(Object obj) {
+        return mList.indexOf(obj);
+    }
+
     public abstract View getView(int position);
 }
